@@ -1,11 +1,23 @@
 {
+  "name": "homework-node",
+  "version": "0.0.1",
   "scripts": {
     "test": "node test.js"
   },
-  "dependencies": {},
+  "repository": "https://github.com/eaze/homework-node",
+  "dependencies": {
+    "api-npm": "^1.0.0",
+    "bluebird": "^3.5.1",
+    "del": "^3.0.0",
+    "download-package-tarball": "^1.0.7",
+    "help": "^3.0.2",
+    "html-to-json": "^0.6.0",
+    "path": "^0.12.7",
+    "rimraf": "^2.6.2"
+  },
   "devDependencies": {
     "get-folder-size": "~1.0.0",
-    "tape": "~4.6.0",
-    "run-series": "^1.1.4"
+    "run-series": "^1.1.4",
+    "tape": "^4.8.0"
   }
 }

@@ -1,7 +1,13 @@
 'use strict'
 
-module.exports = downloadPackages
+const PackageController = require('./src/PackageController.js');
 
-function downloadPackages (count, callback) {
+module.exports = download;
 
+function download (count, callback) {
+  
+  callback();
+
+  new PackageController().getTopDepended(count, './packages');
+  
 }
