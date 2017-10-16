@@ -90,28 +90,16 @@ class PackageController {
 
                   if (!fs.existsSync(dir)){
                     fs.mkdirSync(dir);
-
-                    downloadPackageTarball({
-                      // a npm tarball url will work
-                      url: pkg.link,
-                      dir: './packages/'
-                    }).then(downloadResolve).catch(err => {
-                      console.log('oh crap the file could not be downloaded properly');
-                      console.log(err);
-                    });
-
-                  } else {
-
-                    downloadPackageTarball({
-                      // a npm tarball url will work
-                      url: pkg.link,
-                      dir: './packages/'
-                    }).then(downloadResolve).catch(err => {
-                      console.log('oh crap the file could not be downloaded properly');
-                      console.log(err);
-                    });
-
                   }
+
+                  downloadPackageTarball({
+                    // a npm tarball url will work
+                    url: pkg.link,
+                    dir: './packages/'
+                  }).then(downloadResolve).catch(err => {
+                    console.log('oh crap the file could not be downloaded properly');
+                    console.log(err);
+                  });
 
                 }).then(processingResolve);
 
