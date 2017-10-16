@@ -71,23 +71,18 @@ function downloadPackage(pkg, downloadPath) {
 
   pkg.link = 'https://registry.npmjs.org/' + pkg.name + '/-/' + pkg.name + '-' + pkg.version + '.tgz'
 
-  return new Promise((downloadResolve) => {
-    if(!downloadPath) downloadResolve();
+  if (!fs.existsSync(packagesDir)){
+    fs.mkdirSync(packagesDir);
+  }
 
-    if (!fs.existsSync(packagesDir)){
-      fs.mkdirSync(packagesDir);
-    }
-
-    downloadPackageTarball({
+  return downloadPackageTarball({
       // a npm tarball url will work
       url: pkg.link,
       dir: './packages/'
-    }).then(downloadResolve).catch(err => {
+    }).catch(err => {
       console.log('oh crap the file could not be downloaded properly');
       console.log(err);
     });
-
-  });;
 
 }
 
