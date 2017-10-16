@@ -1,6 +1,6 @@
 # Eaze Node.js Homework
 
-> Our Node.js code challenge for engineering applicants
+I chose to do homework challenge mine in a asynchronous fashion so I installed `tape-promise` to handle my promises.
 
 download packages
 
