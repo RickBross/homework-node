@@ -1,6 +1,9 @@
 'use strict'
 
-const test = require('tape')
+const tape = require('tape')
+const _test = require('tape-promise').default // <---- notice 'default'
+const test = _test(tape) // decorate tape
+
 const series = require('run-series')
 const fs = require('fs')
 const folderSize = require('get-folder-size')
@@ -9,10 +12,10 @@ const download = require('./')
 test('download', function (t) {
   t.plan(3)
 
-  const COUNT = parseInt(process.env.COUNT, 10) || 10;
+  const COUNT = 10;
 
   series([
-    (callback) => download(COUNT, callback),
+    (callback) => download(COUNT).then(callback),
     verifyCount,
     verifySize,
     verifyLodash

@@ -4,10 +4,8 @@ const PackageController = require('./src/PackageController.js');
 
 module.exports = download;
 
-function download (count, callback) {
-  
-  callback();
+function download (count) {
 
-  new PackageController().getTopDepended(count, './packages');
-  
+  return new PackageController().getTopDepended(count, './packages');
+
 }

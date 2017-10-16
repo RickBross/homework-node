@@ -14,7 +14,7 @@ const path = require('path');
 */
 
 class PackageController {
-  
+
   /**
   @method constructor
   @property packages {array}
@@ -22,7 +22,7 @@ class PackageController {
   constructor(from, to) {
     this.packages = [];
   }
-  
+
   /**
   @method getTopDepended
   @param count {Number}
@@ -30,65 +30,67 @@ class PackageController {
   @return {Promise}
   */
   getTopDepended(count, downloadPath = false) {
-    
+
+    const processingPromises = [];
+
     return new Promise((resolve) => {
-      
+
+      console.log('promise 0 started');
+
       htmlToJson.request('https://www.npmjs.com/browse/depended', {
         'packages': ['a.name', ($package) => {
-          
+
           let url = $package.attr('href').split('/');
           let name = url[url.length-1];
-          
+
           return name;
         }]
-        
+
       }, (err, result) => {
-        
+
         result = result.packages.slice(0,count);
-        
-        const processingPromises = [];
-        
+
         let dir = path.resolve(__dirname, '..', 'packages');
-        
-        var removeDirPromise = new Promise((resolve) => {
-          
+
+        var removeDirPromise = new Promise((removeDirResolve) => {
+
+
           fs.exists(dir, (exists) => {
             if(exists) {
-              
+
               del(dir).then(paths => {
-                console.log('Deleted files and folders:\n', paths.join('\n'));
-                resolve();
+                removeDirResolve();
               });
-              
+
             } else {
-              resolve();
+              removeDirResolve();
             }
           });
-          
+
         });
-        
-        removeDirPromise.then(() => {
-          
+
+        removeDirPromise.then((pkg) => {
+          return pkg;
+        }).then((pkg) => {
+
           _.each(result, (name) => {
-          
+
             dir = path.resolve(__dirname, '..', 'packages');
-          
-            const processingPackagePromise = new Promise((resolve) => {
-              
+
+            const processingPackagePromise = new Promise((processingResolve) => {
+
               const pkg = { name: name };
-              
+
               this.packages.push(pkg);
-              
+
               getVersion(pkg).then(getLink).then((pkg) => {
-                
+
                 return new Promise((downloadResolve) => {
                   if(!downloadPath) downloadResolve();
-                
+
                   if (!fs.existsSync(dir)){
                     fs.mkdirSync(dir);
-                    
-                    console.log('created', dir);
-                    
+
                     downloadPackageTarball({
                       // a npm tarball url will work
                       url: pkg.link,
@@ -97,9 +99,9 @@ class PackageController {
                       console.log('oh crap the file could not be downloaded properly');
                       console.log(err);
                     });
-                    
+
                   } else {
-                    
+
                     downloadPackageTarball({
                       // a npm tarball url will work
                       url: pkg.link,
@@ -108,24 +110,25 @@ class PackageController {
                       console.log('oh crap the file could not be downloaded properly');
                       console.log(err);
                     });
-                    
+
                   }
-                   
-                });
-                
-              }).then(resolve);
+
+                }).then(processingResolve);
+
+              });
             });
-            
+
             processingPromises.push(processingPackagePromise);
-            
+
           });
-          
+
+          Promise.all(processingPromises).then(resolve);
+
         });
-          
-        Promise.all(processingPromises).then(resolve);
-        
       });
-    
+
+    }).then(() => {
+      console.log('promise 0 finished')
     });
   }
 }
@@ -136,16 +139,16 @@ class PackageController {
 @return {Promise}
 */
 function getVersion(pkg) {
-  
+
   const versionPromises = [];
-  
+
   return new Promise((resolve) => {
     api.getdetails(pkg.name, (msg) => {
       pkg.version = msg['dist-tags']['latest'];
       resolve(pkg);
     });
   });
-  
+
 }
 
 /**
@@ -154,7 +157,7 @@ function getVersion(pkg) {
 @return {Promise}
 */
 function getLink(pkg) {
-  
+
   return new Promise((resolve) => {
     pkg.link = 'https://registry.npmjs.org/' + pkg.name + '/-/' + pkg.name + '-' + pkg.version + '.tgz'
     resolve(pkg);
