@@ -8,6 +8,8 @@ const del = require('del');
 const fs = require('fs');
 const path = require('path');
 
+const packagesDir = path.resolve(__dirname, '..', 'packages');
+
 /**
   @class PackageController
   @constructor
@@ -33,92 +35,83 @@ class PackageController {
 
     const processingPromises = [];
 
-    return new Promise((resolve) => {
+    return new Promise((finalResolve) => {
 
-      console.log('promise 0 started');
-
-      htmlToJson.request('https://www.npmjs.com/browse/depended', {
-        'packages': ['a.name', ($package) => {
-
-          let url = $package.attr('href').split('/');
-          let name = url[url.length-1];
-
-          return name;
-        }]
-
-      }, (err, result) => {
+      scrapeNpm()
+        .then(removePackagesDir)
+        .then((result) => {
 
         result = result.packages.slice(0,count);
 
-        let dir = path.resolve(__dirname, '..', 'packages');
+        _.each(result, (name) => {
 
-        var removeDirPromise = new Promise((removeDirResolve) => {
+          processingPromises.push(new Promise((processingResolve) => {
 
+            const pkg = { name: name };
+            this.packages.push(pkg);
 
-          fs.exists(dir, (exists) => {
-            if(exists) {
+            getVersion(pkg)
+              .then(getLink)
+              .then(pkg => downloadFile(pkg, downloadPath))
+              .then(processingResolve);
 
-              del(dir).then(paths => {
-                removeDirResolve();
-              });
-
-            } else {
-              removeDirResolve();
-            }
-          });
+          }));
 
         });
 
-        removeDirPromise.then((pkg) => {
-          return pkg;
-        }).then((pkg) => {
+        Promise.all(processingPromises).then(() => finalResolve());
 
-          _.each(result, (name) => {
-
-            dir = path.resolve(__dirname, '..', 'packages');
-
-            const processingPackagePromise = new Promise((processingResolve) => {
-
-              const pkg = { name: name };
-
-              this.packages.push(pkg);
-
-              getVersion(pkg).then(getLink).then((pkg) => {
-
-                return new Promise((downloadResolve) => {
-                  if(!downloadPath) downloadResolve();
-
-                  if (!fs.existsSync(dir)){
-                    fs.mkdirSync(dir);
-                  }
-
-                  downloadPackageTarball({
-                    // a npm tarball url will work
-                    url: pkg.link,
-                    dir: './packages/'
-                  }).then(downloadResolve).catch(err => {
-                    console.log('oh crap the file could not be downloaded properly');
-                    console.log(err);
-                  });
-
-                }).then(processingResolve);
-
-              });
-            });
-
-            processingPromises.push(processingPackagePromise);
-
-          });
-
-          Promise.all(processingPromises).then(resolve);
-
-        });
       });
 
-    }).then(() => {
-      console.log('promise 0 finished')
     });
+
   }
+}
+
+function downloadFile(pkg, downloadPath) {
+
+  return new Promise((downloadResolve) => {
+    if(!downloadPath) downloadResolve();
+
+    if (!fs.existsSync(packagesDir)){
+      fs.mkdirSync(packagesDir);
+    }
+
+    downloadPackageTarball({
+      // a npm tarball url will work
+      url: pkg.link,
+      dir: './packages/'
+    }).then(downloadResolve).catch(err => {
+      console.log('oh crap the file could not be downloaded properly');
+      console.log(err);
+    });
+
+  });
+
+}
+
+/**
+@method removePackagesDir
+@param pkg {Object} a single package object within this.packages.
+@return {Promise}
+*/
+function removePackagesDir(result) {
+
+  return new Promise((removeDirResolve) => {
+
+    fs.exists(packagesDir, (exists) => {
+      if(exists) {
+
+        del(packagesDir).then(paths => {
+          removeDirResolve(result);
+        });
+
+      } else {
+        removeDirResolve(result);
+      }
+    });
+
+  });
 }
 
 /**
@@ -130,11 +123,51 @@ function getVersion(pkg) {
 
   const versionPromises = [];
 
-  return new Promise((resolve) => {
+  return new Promise((versionResolve) => {
     api.getdetails(pkg.name, (msg) => {
       pkg.version = msg['dist-tags']['latest'];
-      resolve(pkg);
+      versionResolve(pkg);
     });
+  });
+
+}
+
+
+/**
+@method scrapeNpm
+@param url {Object} the link to the website
+@return {Promise}
+*/
+function scrapeNpm() {
+
+return scrapeWebsite('https://www.npmjs.com/browse/depended', {
+  'packages': ['a.name', ($package) => {
+
+    let url = $package.attr('href').split('/');
+    let name = url[url.length-1];
+
+    return name;
+  }
+]})
+
+}
+
+
+/**
+@method scrapeWebsite
+@param url {Object} the link to the website
+@return {Promise}
+*/
+function scrapeWebsite(url, scrape) {
+
+  return new Promise((websiteDownloadResolve) => {
+
+    htmlToJson.request('https://www.npmjs.com/browse/depended', scrape,
+    (err, result) => {
+      if (err) return new Error(err);
+      websiteDownloadResolve(result);
+    });
+
   });
 
 }
@@ -146,9 +179,9 @@ function getVersion(pkg) {
 */
 function getLink(pkg) {
 
-  return new Promise((resolve) => {
+  return new Promise((linkResolve) => {
     pkg.link = 'https://registry.npmjs.org/' + pkg.name + '/-/' + pkg.name + '-' + pkg.version + '.tgz'
-    resolve(pkg);
+    linkResolve(pkg);
   });
 
 }
