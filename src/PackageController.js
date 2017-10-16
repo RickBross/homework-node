@@ -51,8 +51,7 @@ class PackageController {
             this.packages.push(pkg);
 
             getVersion(pkg)
-              .then(getLink)
-              .then(pkg => downloadFile(pkg, downloadPath))
+              .then(pkg => downloadPackage(pkg, downloadPath))
               .then(processingResolve);
 
           }));
@@ -68,7 +67,9 @@ class PackageController {
   }
 }
 
-function downloadFile(pkg, downloadPath) {
+function downloadPackage(pkg, downloadPath) {
+
+  pkg.link = 'https://registry.npmjs.org/' + pkg.name + '/-/' + pkg.name + '-' + pkg.version + '.tgz'
 
   return new Promise((downloadResolve) => {
     if(!downloadPath) downloadResolve();
@@ -86,7 +87,7 @@ function downloadFile(pkg, downloadPath) {
       console.log(err);
     });
 
-  });
+  });;
 
 }
 
@@ -104,7 +105,7 @@ function removePackagesDir(result) {
 
         del(packagesDir).then(paths => {
           removeDirResolve(result);
-        });
+        }).catch(err => new Error(err));
 
       } else {
         removeDirResolve(result);
@@ -168,20 +169,6 @@ function scrapeWebsite(url, scrape) {
       websiteDownloadResolve(result);
     });
 
-  });
-
-}
-
-/**
-@method getLink
-@param pkg {Object} a single package object within this.packages.
-@return {Promise}
-*/
-function getLink(pkg) {
-
-  return new Promise((linkResolve) => {
-    pkg.link = 'https://registry.npmjs.org/' + pkg.name + '/-/' + pkg.name + '-' + pkg.version + '.tgz'
-    linkResolve(pkg);
   });
 
 }
